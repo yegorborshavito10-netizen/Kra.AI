@@ -1,0 +1,157 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#090914">
+<title>Kra.AI</title>
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;padding:20px;background:#090914;
+ color:white;font-family:Arial,sans-serif;
+}
+main{max-width:600px;margin:auto}
+header{text-align:center;padding:25px 0}
+.logo{font-size:45px;font-weight:900;color:#9875ff}
+header p{color:#999}
+.card{
+ background:#151522;border:1px solid #292940;
+ border-radius:20px;padding:19px;margin:15px 0;
+}
+h2{font-size:19px}
+textarea,select{
+ width:100%;padding:14px;border-radius:12px;
+ background:#0c0c18;color:white;
+ border:1px solid #393950;margin:9px 0;
+ font-size:15px;
+}
+textarea{height:120px;resize:vertical}
+button{
+ width:100%;padding:15px;border:0;
+ border-radius:13px;background:#805cff;
+ color:white;font-size:16px;font-weight:bold;
+ margin-top:12px;
+}
+button:disabled{opacity:.5}
+#status{color:#bbb;font-size:14px;line-height:1.5}
+#result{
+ display:none;width:100%;border-radius:14px;
+ margin-top:15px;
+}
+small{color:#999}
+</style>
+</head>
+<body>
+<main>
+<header>
+ <div class="logo">Kra.AI</div>
+ <p>Imagine. Create.</p>
+</header>
+
+<section class="card">
+ <h2>🖼️ Генерация изображений</h2>
+
+ <textarea id="prompt"
+ placeholder="Опиши изображение, которое хочешь создать..."></textarea>
+
+ <label>Стиль</label>
+ <select id="style">
+  <option value="">Автоматический</option>
+  <option value="photographic">Фотореализм</option>
+  <option value="cinematic">Кино</option>
+  <option value="anime">Аниме</option>
+  <option value="digital-art">Цифровое искусство</option>
+  <option value="fantasy-art">Фэнтези</option>
+  <option value="3d-model">3D</option>
+  <option value="pixel-art">Pixel Art</option>
+ </select>
+
+ <label>Формат</label>
+ <select id="ratio">
+  <option value="1:1">Квадрат 1:1</option>
+  <option value="16:9">Широкий 16:9</option>
+  <option value="9:16">Вертикальный 9:16</option>
+  <option value="3:2">3:2</option>
+  <option value="2:3">2:3</option>
+ </select>
+
+ <button id="generate">✨ Создать изображение</button>
+
+ <p id="status">Готов к созданию!</p>
+ <img id="result" alt="Созданное изображение">
+
+ <button id="download" hidden>⬇️ Скачать изображение</button>
+</section>
+
+<section class="card">
+ <h2>✨ Kra.AI</h2>
+ <p>Твоя собственная нейросеть для создания изображений.</p>
+ <small>Powered by Stability AI</small>
+</section>
+</main>
+
+<script>
+const $=id=>document.getElementById(id);
+let imageUrl=null;
+
+$("generate").onclick=async()=>{
+ const prompt=$("prompt").value.trim();
+ if(!prompt){
+  $("status").textContent="Напиши описание изображения!";
+  return;
+ }
+
+ const btn=$("generate");
+ btn.disabled=true;
+ $("result").style.display="none";
+ $("download").hidden=true;
+ $("status").textContent="Kra.AI создаёт изображение...";
+
+ try{
+  const response=await fetch("/api/generate",{
+   method:"POST",
+   headers:{"Content-Type":"application/json"},
+   body:JSON.stringify({
+    prompt,
+    style:$("style").value,
+    aspect_ratio:$("ratio").value
+   })
+  });
+
+  if(!response.ok){
+   const error=await response.text();
+   throw new Error(error||"Ошибка "+response.status);
+  }
+
+  const blob=await response.blob();
+  if(!blob.type.startsWith("image/")){
+   throw new Error("Сервер не вернул изображение");
+  }
+
+  if(imageUrl)URL.revokeObjectURL(imageUrl);
+  imageUrl=URL.createObjectURL(blob);
+  $("result").src=imageUrl;
+  $("result").style.display="block";
+  $("download").hidden=false;
+  $("status").textContent="Готово! 🎉";
+
+ }catch(e){
+  $("status").textContent="Ошибка: "+e.message;
+ }finally{
+  btn.disabled=false;
+ }
+};
+
+$("download").onclick=()=>{
+ if(!imageUrl)return;
+ const a=document.createElement("a");
+ a.href=imageUrl;
+ a.download="kra-ai.png";
+ a.click();
+};
+</script>
+</body>
+  </html>
+  
