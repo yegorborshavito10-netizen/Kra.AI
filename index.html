@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kra.AI</title>
+
+<style>
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 20px;
+  background: #10111b;
+  color: white;
+  font-family: Arial, sans-serif;
+}
+
+.container {
+  max-width: 500px;
+  margin: auto;
+}
+
+h1 {
+  text-align: center;
+  color: #8b7cff;
+  font-size: 36px;
+}
+
+.subtitle {
+  text-align: center;
+  color: #aaa;
+}
+
+textarea, select, button {
+  width: 100%;
+  padding: 14px;
+  margin-top: 14px;
+  border: 0;
+  border-radius: 12px;
+  font-size: 16px;
+}
+
+textarea {
+  background: #222437;
+  color: white;
+  min-height: 120px;
+  resize: vertical;
+}
+
+select {
+  background: #222437;
+  color: white;
+}
+
+button {
+  background: #7565ff;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.5;
+}
+
+#status {
+  text-align: center;
+  margin: 15px 0;
+  color: #aaa;
+}
+
+#preview {
+  width: 100%;
+  margin-top: 15px;
+  border-radius: 15px;
+  display: none;
+}
+
+#download {
+  display: none;
+  text-align: center;
+  background: #24263b;
+  padding: 15px;
+  border-radius: 12px;
+  margin-top: 12px;
+  color: white;
+  text-decoration: none;
+}
+</style>
+</head>
+
+<body>
+<div class="container">
+
+<h1>Kra.AI</h1>
+<p class="subtitle">Создавай изображения с помощью ИИ</p>
+
+<textarea id="prompt"
+placeholder="Опиши изображение, которое хочешь создать..."></textarea>
+
+<select id="style">
+  <option value="none">Обычный стиль</option>
+  <option value="photographic">Фотореализм</option>
+  <option value="anime">Аниме</option>
+  <option value="digital-art">Цифровое искусство</option>
+  <option value="cinematic">Кинематографический</option>
+  <option value="fantasy-art">Фэнтези</option>
+</select>
+
+<select id="ratio">
+  <option value="1:1">Квадрат 1:1</option>
+  <option value="16:9">Горизонтальный 16:9</option>
+  <option value="9:16">Вертикальный 9:16</option>
+  <option value="3:2">3:2</option>
+  <option value="2:3">2:3</option>
+</select>
+
+<button id="generate">Создать изображение</button>
+
+<p id="status"></p>
+
+<img id="preview" alt="Созданное изображение">
+
+<a id="download" download="kra-ai-image.png">
+  Скачать изображение
+</a>
+
+</div>
+
+<script>
+const generateButton = document.getElementById("generate");
+const statusText = document.getElementById("status");
+const preview = document.getElementById("preview");
+const download = document.getElementById("download");
+
+let currentImageUrl = null;
+
+generateButton.addEventListener("click", async () => {
+  const prompt = document.getElementById("prompt").value.trim();
+  const style = document.getElementById("style").value;
+  const aspect_ratio = document.getElementById("ratio").value;
+
+  if (!prompt) {
+    statusText.textContent = "Сначала напиши описание изображения.";
+    return;
+  }
+
+  generateButton.disabled = true;
+  statusText.textContent = "ИИ создаёт изображение...";
+  preview.style.display = "none";
+  download.style.display = "none";
+
+  try {
+    const response = await fetch("/api/generate", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        prompt,
+        style,
+        aspect_ratio
+      })
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || "Ошибка генерации");
+    }
+
+    const blob = await response.blob();
+
+    if (currentImageUrl) {
+      URL.revokeObjectURL(currentImageUrl);
+    }
+
+    currentImageUrl = URL.createObjectURL(blob);
+
+    preview.src = currentImageUrl;
+    preview.style.display = "block";
+
+    download.href = currentImageUrl;
+    download.style.display = "block";
+
+    statusText.textContent = "Готово! Изображение создано.";
+  } catch (error) {
+    statusText.textContent = "Ошибка: " + error.message;
+  } finally {
+    generateButton.disabled = false;
+  }
+});
+</script>
+
+</body>
+</html>
